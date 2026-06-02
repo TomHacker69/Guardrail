@@ -41,9 +41,9 @@ export default function ResultsPage() {
   const fetchResults = async () => {
     try {
       const [scanRes, patchRes] = await Promise.all([
-        axios.get(`${API_URL}/api/result/${sessionId}`),
-        axios.get(`${API_URL}/api/result/${sessionId}`).catch(() => null)
-      ]);
+  axios.get(`${API_URL}/api/result/${sessionId}`),
+  axios.get(`${API_URL}/api/patch/${sessionId}`).catch(() => null)  
+]);
 
       setResult(scanRes.data);
       if (patchRes?.data?.patch) {
