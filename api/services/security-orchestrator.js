@@ -266,11 +266,17 @@ class SecurityOrchestrator {
   }
 
   getHighestSeverity(vulnerabilities) {
-    const severityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
-    return vulnerabilities.reduce((highest, v) => {
-      return severityOrder[v.severity] > severityOrder[highest] ? v.severity : highest;
-    }, 'low');
-  }
+  const severityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
+
+  if (!vulnerabilities || vulnerabilities.length === 0) return 'none';
+
+  return vulnerabilities.reduce((highest, v) => {
+    const current = severityOrder[v.severity] || 0;
+    const highestVal = severityOrder[highest] || 0;
+
+    return current > highestVal ? v.severity : highest;
+  }, 'none');
+}
 
   getCWE(riskType) {
     const cweMap = {
