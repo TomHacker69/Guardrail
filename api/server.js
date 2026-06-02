@@ -47,7 +47,11 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'healthy', timestamp: new Date().toISOString(), version: '1.0.0' });
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    version: '1.0.0'
+  });
 });
 
 app.use('/api/scan', scanRoutes);
@@ -59,6 +63,7 @@ app.use('/api/fix', fixRoutes);
 
 app.use((err, req, res, next) => {
   console.error('Error:', err);
+
   res.status(err.status || 500).json({
     error: err.message || 'Internal server error',
     timestamp: new Date().toISOString()
@@ -66,13 +71,37 @@ app.use((err, req, res, next) => {
 });
 
 app.use((req, res) => {
-  res.status(404).json({ error: 'Endpoint not found' });
+  res.status(404).json({
+    success: false,
+    error: 'Endpoint not found',
+    path: req.originalUrl,
+    timestamp: new Date().toISOString()
+  });
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 GuardRail AI API running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔒 Rate limit: ${process.env.RATE_LIMIT || 50} requests/hour`);
+});
+
+// Graceful shutdown handling
+process.on('SIGTERM', () => {
+  console.log('🛑 SIGTERM received. Shutting down gracefully...');
+
+  server.close(() => {
+    console.log('✅ Server closed successfully.');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('🛑 SIGINT received. Shutting down gracefully...');
+
+  server.close(() => {
+    console.log('✅ Server closed successfully.');
+    process.exit(0);
+  });
 });
 
 module.exports = app;
