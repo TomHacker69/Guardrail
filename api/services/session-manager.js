@@ -7,10 +7,16 @@ const { DynamoDBClient, PutItemCommand, GetItemCommand, UpdateItemCommand } = re
 
 class SessionManager {
   constructor() {
+    if (SessionManager.instance) {
+      return SessionManager.instance;
+    }
+    
     this.client = new DynamoDBClient({ 
       region: process.env.AWS_REGION || 'us-east-1' 
     });
     this.tableName = process.env.DYNAMODB_TABLE || 'GuardRailSessions';
+    
+    SessionManager.instance = this;
   }
 
   async createSession({ sessionId, language, filename, clientIp, codeLength }) {
