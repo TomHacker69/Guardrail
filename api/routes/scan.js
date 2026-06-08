@@ -37,7 +37,7 @@ const scanSchema = Joi.object({
  * POST /api/scan
  * Submit code for security analysis (scan-only, no remediation)
  */
-router.post('/', validateInput(scanSchema), async (req, res, next) => {
+const processScan = async (req, res, next) => {
   try {
     const { code, language, filename } = req.body;
     const sessionId = uuidv4();
@@ -83,30 +83,32 @@ router.post('/', validateInput(scanSchema), async (req, res, next) => {
     console.error('Scan error:', error);
     next(error);
   }
-});
+};
+
+/**
+ * POST /api/scan
+ * Submit code for security analysis (scan-only, no remediation)
+ */
+router.post('/', validateInput(scanSchema), processScan);
 
 /**
  * POST /api/scan/upload
  * Upload file for analysis
  */
-router.post('/upload', upload.single('file'), async (req, res, next) => {
+router.post('/upload', upload.single('file'), (req, res, next) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    const code = req.file.buffer.toString('utf-8');
-    const language = req.body.language;
-    const filename = req.file.originalname;
-
-    // Reuse main scan logic
-    req.body = { code, language, filename };
-    return router.handle(req, res, next);
-
+    req.body.code = req.file.buffer.toString('utf-8');
+    req.body.filename = req.file.originalname;
+    
+    next();
   } catch (error) {
     console.error('Upload error:', error);
     next(error);
   }
-});
+}, validateInput(scanSchema), processScan);
 
 module.exports = router;

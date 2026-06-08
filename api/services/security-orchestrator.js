@@ -13,6 +13,10 @@ const SessionManager = require('./session-manager');
 
 class SecurityOrchestrator {
   constructor() {
+    if (SecurityOrchestrator.instance) {
+      return SecurityOrchestrator.instance;
+    }
+
     this.bedrock = new BedrockClient();
     this.remediation = new RemediationEngine();
     this.secretManager = new SecretLifecycleManager();
@@ -20,6 +24,8 @@ class SecurityOrchestrator {
     this.logger = new EventLogger();
     this.storage = new S3Storage();
     this.sessionManager = new SessionManager();
+
+    SecurityOrchestrator.instance = this;
   }
 
   async processCode({ sessionId, code, language, filename, scanOnly = false }) {
