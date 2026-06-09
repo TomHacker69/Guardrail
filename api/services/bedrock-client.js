@@ -16,8 +16,41 @@ class BedrockClient {
     this.retryDelay = 2000; // 2 seconds
   }
 
+  detectPromptInjection(code) {
+    if (!code) return false;
+    const lowerCode = code.toLowerCase();
+    const injectionPatterns = [
+      'ignore previous instructions',
+      'ignore all previous',
+      'system prompt',
+      'forget previous',
+      'bypass rules',
+      'jailbreak',
+      'do not follow',
+      'you are now',
+      'disregard previous'
+    ];
+    return injectionPatterns.some(pattern => lowerCode.includes(pattern));
+  }
+
   async analyzeCode({ code, language, filename }) {
-    const prompt = this.buildAnalysisPrompt(code, language, filename);
+    // 1. Detection: Detect injection attempts
+    if (this.detectPromptInjection(code)) {
+      console.warn(`[SECURITY] Prompt injection attempt detected in ${filename}`);
+      return {
+        risk_detected: true,
+        risk_type: 'prompt_injection',
+        severity: 'critical',
+        explanation: 'A prompt injection attack was detected in the input code.',
+        affected_lines: [],
+        remediation_required: false
+      };
+    }
+
+    // 2. Input: Validate and sanitize (prevent escaping the code block)
+    const sanitizedCode = code.replace(/```/g, "'''");
+
+    const prompt = this.buildAnalysisPrompt(sanitizedCode, language, filename);
 
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
       try {
@@ -149,7 +182,7 @@ Return ONLY valid JSON in this exact format:
         throw new Error('Invalid analysis response format');
       }
 
-      return parsed;
+      return this.filterUnsafeOutput(parsed);
 
     } catch (error) {
       console.error('Failed to parse AI response:', error);
@@ -159,6 +192,32 @@ Return ONLY valid JSON in this exact format:
         remediation_required: false 
       };
     }
+  }
+
+  sanitizeOutputString(str) {
+    if (typeof str !== 'string') return str;
+    // 3. Output: Filter unsafe output
+    return str.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  filterUnsafeOutput(parsed) {
+    // 4. Rules: Enforce safety rules on output
+    if (parsed.vulnerabilities && Array.isArray(parsed.vulnerabilities)) {
+      parsed.vulnerabilities = parsed.vulnerabilities.map(v => ({
+        ...v,
+        risk_type: this.sanitizeOutputString(v.risk_type),
+        severity: this.sanitizeOutputString(v.severity),
+        explanation: this.sanitizeOutputString(v.explanation),
+        extracted_value: this.sanitizeOutputString(v.extracted_value)
+      }));
+    }
+    
+    if (parsed.risk_type) parsed.risk_type = this.sanitizeOutputString(parsed.risk_type);
+    if (parsed.severity) parsed.severity = this.sanitizeOutputString(parsed.severity);
+    if (parsed.explanation) parsed.explanation = this.sanitizeOutputString(parsed.explanation);
+    if (parsed.extracted_value) parsed.extracted_value = this.sanitizeOutputString(parsed.extracted_value);
+    
+    return parsed;
   }
 }
 
