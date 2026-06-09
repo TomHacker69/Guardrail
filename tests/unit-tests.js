@@ -338,6 +338,34 @@ This is much safer!`;
     failed++;
   }
 
+  // Test 12: Data Leakage Prevention (PII Redaction)
+  console.log('Test 12: Data Leakage Prevention (PII Redaction)');
+  console.log('-'.repeat(60));
+  try {
+    const SecurityAnalyzer = require('../src/modules/security-analyzer');
+    const analyzer = new SecurityAnalyzer({ region: 'us-east-1' });
+    
+    const rawOutput = 'Found issue. Contact user at john.doe@example.com or call 555-123-4567. SSN: 123-45-6789. Card: 1234-5678-9012-3456';
+    const sanitizedOutput = analyzer.sanitizeOutputString(rawOutput);
+    
+    if (sanitizedOutput.includes('[REDACTED_EMAIL]') && 
+        sanitizedOutput.includes('[REDACTED_PHONE]') &&
+        sanitizedOutput.includes('[REDACTED_SSN]') &&
+        sanitizedOutput.includes('[REDACTED_CARD]') &&
+        !sanitizedOutput.includes('john.doe@example.com')) {
+      console.log('✅ PASSED');
+      console.log('   PII properly redacted\n');
+      passed++;
+    } else {
+      console.log('❌ FAILED - PII redaction failed\n');
+      console.log(`   Result: ${sanitizedOutput}\n`);
+      failed++;
+    }
+  } catch (error) {
+    console.log(`❌ FAILED - ${error.message}\n`);
+    failed++;
+  }
+
   // Summary
   console.log('='.repeat(60));
   console.log(`\n📊 Test Results: ${passed}/${passed + failed} passed`);

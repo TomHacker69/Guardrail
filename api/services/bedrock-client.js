@@ -194,10 +194,25 @@ Return ONLY valid JSON in this exact format:
     }
   }
 
+  redactPII(str) {
+    if (typeof str !== 'string') return str;
+    // Redact emails
+    str = str.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[REDACTED_EMAIL]');
+    // Redact standard US SSNs
+    str = str.replace(/\b\d{3}-\d{2}-\d{4}\b/g, '[REDACTED_SSN]');
+    // Redact credit cards (basic 16 digit pattern)
+    str = str.replace(/\b(?:\d{4}[ -]?){3}\d{4}\b/g, '[REDACTED_CARD]');
+    // Redact US phone numbers
+    str = str.replace(/\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/g, '[REDACTED_PHONE]');
+    return str;
+  }
+
   sanitizeOutputString(str) {
     if (typeof str !== 'string') return str;
     // 3. Output: Filter unsafe output
-    return str.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    let sanitized = str.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    // Privacy protection: Detect and filter data leakage (PII)
+    return this.redactPII(sanitized);
   }
 
   filterUnsafeOutput(parsed) {
