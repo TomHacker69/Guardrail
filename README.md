@@ -2,6 +2,20 @@
 
 Developer-first SOAR platform. Detects vulnerabilities in code, generates production-ready patches, provisions AWS secrets, and orchestrates responses across GitHub, Slack, and CI/CD — automatically.
 
+## Table of Contents
+
+1. [What it does](#what-it-does)
+2. [Architecture](#architecture)
+3. [Stack](#stack)
+4. [Ingest Channels](#ingest-channels)
+5. [Quick Start](#quick-start)
+6. [CI/CD Pipeline](#cicd-pipeline)
+7. [Response Actions by Severity](#response-actions-by-severity)
+8. [Vulnerability Coverage](#vulnerability-coverage)
+9. [Languages Supported](#languages-supported)
+10. [AWS Services](#aws-services)
+11. [License](#license)
+
 ## What it does
 
 - Detects 50+ vulnerability types (CWE mapped) using Groq AI (Llama 3.3 70B)
