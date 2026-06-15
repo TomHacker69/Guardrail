@@ -25,11 +25,7 @@ this.client = new SecretsManagerClient({
     const secretName = this.generateSecretName(sessionId, filename, type, timestamp);
 
     try {
-      console.log("---- SECRET DEBUG ----");
-console.log("Secret Name:", secretName);
-console.log("Secret Name Length:", secretName.length);
-console.log("Secret Size (bytes):", Buffer.byteLength(value, 'utf8'));
-console.log("----------------------");
+      console.log(`[${sessionId}] Creating secret for ${type}...`);
       const command = new CreateSecretCommand({
         Name: secretName,
         Description: `GuardRail AI Public - ${type} from ${filename}`,
@@ -56,11 +52,10 @@ console.log("----------------------");
       };
 
     } catch (error) {
-  console.error("========== FULL SECRET ERROR ==========");
-  console.error(error);
-  console.error("=======================================");
-  throw error;
-}
+      console.error(`[${sessionId}] Secret creation failed: ${error.message}`);
+      console.error(error.stack);
+      throw error;
+    }
   }
 
   generateSecretName(sessionId, filename, type, timestamp) {
@@ -112,7 +107,8 @@ public String getSecret() {
       console.log(`[${sessionId}] Secret deleted: ${secretName}`);
 
     } catch (error) {
-      console.error(`[${sessionId}] Secret deletion failed:`, error);
+      console.error(`[${sessionId}] Secret deletion failed: ${error.message}`);
+      console.error(error.stack);
     }
   }
 }

@@ -43,7 +43,8 @@ class SessionManager {
       console.log(`[${sessionId}] Session created`);
 
     } catch (error) {
-      console.error(`[${sessionId}] Session creation failed:`, error);
+      console.error(`[${sessionId}] Session creation failed: ${error.message}`);
+      console.error(error.stack);
       throw new Error(`Failed to create session: ${error.message}`);
     }
   }
@@ -81,7 +82,8 @@ class SessionManager {
       console.log(`[${sessionId}] Session updated`);
 
     } catch (error) {
-      console.error(`[${sessionId}] Session update failed:`, error);
+      console.error(`[${sessionId}] Session update failed: ${error.message}`);
+      console.error(error.stack);
     }
   }
 
@@ -101,7 +103,8 @@ class SessionManager {
       return this.unmarshallItem(response.Item);
 
     } catch (error) {
-      console.error(`[${sessionId}] Session retrieval failed:`, error);
+      console.error(`[${sessionId}] Session retrieval failed: ${error.message}`);
+      console.error(error.stack);
       return null;
     }
   }

@@ -114,7 +114,8 @@ class EventLogger {
       });
 
     } catch (error) {
-      console.error('Event logging failed:', error);
+      console.error(`Event logging failed: ${error.message}`);
+      console.error(error.stack);
     }
   }
 
@@ -175,7 +176,8 @@ class EventLogger {
       });
 
     } catch (err) {
-      console.error('Error logging failed:', err);
+      console.error(`Error logging failed: ${err.message}`);
+      console.error(err.stack);
     }
   }
 
@@ -293,7 +295,8 @@ class EventLogger {
 
       return response.Items || [];
     } catch (error) {
-      console.error('Failed to get session logs:', error);
+      console.error(`Failed to get session logs: ${error.message}`);
+      console.error(error.stack);
       return [];
     }
   }

@@ -35,7 +35,8 @@ class S3Storage {
       console.log(`[${sessionId}] Code stored in S3: ${key}`);
 
     } catch (error) {
-      console.error(`[${sessionId}] S3 storage failed:`, error);
+      console.error(`[${sessionId}] S3 storage failed: ${error.message}`);
+      console.error(error.stack);
       throw new Error(`Failed to store code: ${error.message}`);
     }
   }
@@ -61,7 +62,8 @@ class S3Storage {
       console.log(`[${sessionId}] Patch stored in S3: ${key}`);
 
     } catch (error) {
-      console.error(`[${sessionId}] Patch storage failed:`, error);
+      console.error(`[${sessionId}] Patch storage failed: ${error.message}`);
+      console.error(error.stack);
       throw new Error(`Failed to store patch: ${error.message}`);
     }
   }
@@ -92,7 +94,8 @@ class S3Storage {
       return await response.Body.transformToString();
 
     } catch (error) {
-      console.error(`[${sessionId}] Code retrieval failed:`, error);
+      console.error(`[${sessionId}] Code retrieval failed: ${error.message}`);
+      console.error(error.stack);
       return null;
     }
   }
@@ -111,7 +114,8 @@ class S3Storage {
       return JSON.parse(body);
 
     } catch (error) {
-      console.error(`[${sessionId}] Patch retrieval failed:`, error);
+      console.error(`[${sessionId}] Patch retrieval failed: ${error.message}`);
+      console.error(error.stack);
       throw new Error(`Failed to retrieve patch: ${error.message}`);
     }
   }
@@ -134,7 +138,8 @@ class S3Storage {
       console.log(`[${sessionId}] Session files deleted from S3`);
 
     } catch (error) {
-      console.error(`[${sessionId}] S3 deletion failed:`, error);
+      console.error(`[${sessionId}] S3 deletion failed: ${error.message}`);
+      console.error(error.stack);
     }
   }
 }
