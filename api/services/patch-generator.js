@@ -4,6 +4,7 @@
  */
 
 const Groq = require('groq-sdk');
+const BedrockClient = require('./bedrock-client');
 
 class PatchGenerator {
   constructor() {
@@ -13,6 +14,8 @@ class PatchGenerator {
     this.model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
     this.maxRetries = 3;
     this.retryDelay = 2000;
+    // Reuse BedrockClient's sanitization/PII-redaction logic
+    this._sanitizer = new BedrockClient();
   }
 
   async generatePatch({ originalCode, analysis, strategy, secretRef, language }) {
@@ -31,11 +34,15 @@ class PatchGenerator {
         const secureCode = response.choices[0].message.content;
         const cleanCode = this.extractCode(secureCode);
 
+        // Filter PII and unsafe content from LLM-generated output before storing/returning
+        const filteredCode = this._sanitizer.redactPII(cleanCode);
+        const filteredExplanation = this._sanitizer.sanitizeOutputString(analysis.explanation);
+
         return {
           originalCode,
-          secureCode: cleanCode,
-          diff: this.generateDiff(originalCode, cleanCode),
-          explanation: analysis.explanation,
+          secureCode: filteredCode,
+          diff: this.generateDiff(originalCode, filteredCode),
+          explanation: filteredExplanation,
           securityBenefit: strategy.approach,
           confidence: strategy.confidence,
           vulnerabilities: [{
@@ -44,7 +51,7 @@ class PatchGenerator {
             line: analysis.affected_lines && analysis.affected_lines[0] ? analysis.affected_lines[0] : 1,
             column: 0,
             message: `${analysis.severity.toUpperCase()}: ${analysis.risk_type.replace(/_/g, ' ')}`,
-            description: analysis.explanation,
+            description: filteredExplanation,
             cwe: this.getCWE(analysis.risk_type)
           }],
           secretRef: secretRef ? {

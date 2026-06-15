@@ -72,7 +72,8 @@ router.post('/:sessionId', async (req, res, next) => {
       patch: {
         available: true,
         secureCode: patchData.secureCode,
-        originalCode: patchData.originalCode,
+        // originalCode intentionally omitted from response to prevent
+        // re-sending potentially sensitive code (secrets, PII) to the client.
         diff: patchData.diff,
         explanation: patchData.explanation,
         securityBenefit: patchData.securityBenefit,

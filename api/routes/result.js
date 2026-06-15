@@ -46,12 +46,20 @@ router.get('/:sessionId', async (req, res, next) => {
       filename: session.filename,
       vulnerabilitiesDetected: session.vulnerabilities_detected,
       secretCreated: session.secret_created,
-      // Include vulnerability details from patch
-      vulnerabilities: patch && patch.vulnerabilities ? patch.vulnerabilities : [],
+      // Include vulnerability details from patch — strip extractedValue to prevent secret leakage
+      vulnerabilities: patch && patch.vulnerabilities
+        ? patch.vulnerabilities.map(({ extractedValue, ...safe }) => safe)
+        : [],
       patchedCode: patch && patch.secureCode ? patch.secureCode : null,
       patch: patch ? {
         available: true,
-        diff: patch.diff,
+        // Omit diff.original lines to avoid returning the original (potentially sensitive) code
+        diff: patch.diff ? {
+          linesRemoved: patch.diff.linesRemoved,
+          linesAdded: patch.diff.linesAdded,
+          changeCount: patch.diff.changeCount,
+          secure: patch.diff.secure
+        } : null,
         explanation: patch.explanation,
         securityBenefit: patch.securityBenefit,
         confidence: patch.confidence,
