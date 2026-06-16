@@ -62,9 +62,10 @@ router.get('/:sessionId/errors', async (req, res, next) => {
     const response = await dynamodb.send(command);
     const errors = (response.Items || []).map(item => ({
       timestamp: item.timestamp?.S,
-      message: item.error_message?.S,
-      stack: item.stack_trace?.S,
+      // Return only the sanitized message — never expose stack traces to clients
+      message: item.error_message?.S || 'An error occurred',
       context: item.context?.S
+      // stack_trace intentionally omitted: internal implementation detail
     }));
 
     res.json({ sessionId, errors });

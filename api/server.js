@@ -61,21 +61,59 @@ app.use('/api/demo', demoRoutes);
 app.use('/api/session', sessionRoutes);
 app.use('/api/fix', fixRoutes);
 
-app.use((err, req, res, next) => {
-  console.error('Error:', err);
+// ---------------------------------------------------------------------------
+// Centralized error handler
+// - Logs full detail (message + stack) on the SERVER only
+// - Sends only a sanitized, client-safe message in the HTTP response
+// ---------------------------------------------------------------------------
 
-  res.status(err.status || 500).json({
-    error: err.message || 'Internal server error',
-    timestamp: new Date().toISOString()
-  });
+// Map of known safe, user-facing messages keyed by HTTP status code
+const CLIENT_ERROR_MESSAGES = {
+  400: 'Bad request.',
+  401: 'Authentication required.',
+  403: 'Access denied.',
+  404: 'Resource not found.',
+  409: 'Conflict with current state.',
+  410: 'Resource no longer available.',
+  422: 'Unprocessable request.',
+  429: 'Too many requests. Please try again later.',
+};
+
+app.use((err, req, res, next) => {
+  const status = err.status || err.statusCode || 500;
+  const isDev = process.env.NODE_ENV === 'development';
+
+  // Always log the full error (message + stack) server-side for debugging
+  console.error(`[ERROR] ${req.method} ${req.path} — ${err.message}`);
+  if (err.stack) {
+    console.error(err.stack);
+  }
+
+  // Build client-safe response — never expose internal error messages or stack traces
+  const clientMessage =
+    CLIENT_ERROR_MESSAGES[status] ||
+    (status < 500 ? 'Request error.' : 'An unexpected error occurred. Please try again.');
+
+  const response = {
+    error: clientMessage,
+    status,
+    timestamp: new Date().toISOString(),
+  };
+
+  // In development only, include the original message for easier local debugging
+  if (isDev) {
+    response.detail = err.message;
+  }
+
+  res.status(status).json(response);
 });
 
+// 404 handler — intentionally omits the requested path to avoid reflecting
+// unsanitized user input back in the response body
 app.use((req, res) => {
   res.status(404).json({
-    success: false,
-    error: 'Endpoint not found',
-    path: req.originalUrl,
-    timestamp: new Date().toISOString()
+    error: 'Endpoint not found.',
+    timestamp: new Date().toISOString(),
   });
 });
 

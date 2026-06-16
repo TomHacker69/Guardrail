@@ -141,12 +141,16 @@ class SecurityOrchestrator {
       return await this.generateRemediation(sessionId, code, language, filename, allVulns, vulnerabilityResults, startTime);
 
     } catch (error) {
-      console.error(`[${sessionId}] Orchestration error:`, error);
-      
+      console.error(`[${sessionId}] Orchestration error:`, error.message);
+      console.error(error.stack);
+
+      // Log a structured error record — store the message for audit purposes
+      // but keep the stack trace server-side only (not persisted to DynamoDB)
       await this.logger.logError({
         sessionId,
         error: error.message,
-        stack: error.stack
+        // stack intentionally omitted to prevent leakage via the logs API
+        context: 'processCode'
       });
 
       throw error;
