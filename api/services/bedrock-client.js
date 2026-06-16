@@ -122,7 +122,7 @@ ${code}
 ANALYSIS REQUIREMENTS:
 - Detect ALL vulnerabilities in the code
 - Return an array of ALL findings
-- Extract actual secret values when found
+- For hardcoded secrets, indicate the variable/key name but DO NOT include the raw secret value in your response
 - Identify exact line numbers for each issue
 - Provide clear explanations
 - Assign accurate severity levels
@@ -135,7 +135,7 @@ Return ONLY valid JSON in this exact format:
       "severity": "low|medium|high|critical",
       "explanation": "Clear explanation of the vulnerability",
       "affected_lines": [array of line numbers],
-      "extracted_value": "the actual secret value if applicable, otherwise null"
+      "extracted_value": "the variable or key name where the secret is assigned (e.g. API_KEY), not the actual secret value"
     }
   ]
 }`;
@@ -163,8 +163,12 @@ Return ONLY valid JSON in this exact format:
             remediation_required: false 
           };
         }
-        // Return first vulnerability for now (backward compatibility)
-        const first = parsed.vulnerabilities[0];
+
+        // Apply output filtering to every vulnerability in the array
+        // before any field is exposed to callers
+        const filteredParsed = this.filterUnsafeOutput(parsed);
+        const first = filteredParsed.vulnerabilities[0];
+
         return {
           risk_detected: true,
           risk_type: first.risk_type,
@@ -172,8 +176,10 @@ Return ONLY valid JSON in this exact format:
           explanation: first.explanation,
           affected_lines: first.affected_lines,
           remediation_required: true,
+          // Keep extracted_value only for internal secret-migration use;
+          // it is intentionally masked for display paths via filterUnsafeOutput.
           extracted_value: first.extracted_value,
-          all_vulnerabilities: parsed.vulnerabilities
+          all_vulnerabilities: filteredParsed.vulnerabilities
         };
       }
       
@@ -204,6 +210,24 @@ Return ONLY valid JSON in this exact format:
     str = str.replace(/\b(?:\d{4}[ -]?){3}\d{4}\b/g, '[REDACTED_CARD]');
     // Redact US phone numbers
     str = str.replace(/\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/g, '[REDACTED_PHONE]');
+    // Redact AWS access key IDs (AKIA...)
+    str = str.replace(/\bAKIA[0-9A-Z]{16}\b/g, '[REDACTED_AWS_KEY_ID]');
+    // Redact generic AWS secret access keys (40-char base64 candidates after common prefixes)
+    str = str.replace(/(?<=[Ss]ecret[_\s]?[Kk]ey["\s:=]+)[A-Za-z0-9/+]{40}/g, '[REDACTED_AWS_SECRET]');
+    // Redact JWT tokens (three base64url segments)
+    str = str.replace(/eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, '[REDACTED_JWT]');
+    // Redact generic high-entropy secrets assigned to common variable names
+    str = str.replace(
+      /(?:password|passwd|secret|token|api[_-]?key|auth[_-]?key|private[_-]?key)\s*[:=]\s*["']?([A-Za-z0-9+/!@#$%^&*_\-]{16,})["']?/gi,
+      (match, secret) => match.replace(secret, '[REDACTED_SECRET]')
+    );
+    // Redact PEM private keys
+    str = str.replace(/-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g, '[REDACTED_PRIVATE_KEY]');
+    // Redact IBAN numbers
+    str = str.replace(/\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b/g, (match) => {
+      // Simple IBAN length check (15–34 chars) to reduce false positives
+      return match.length >= 15 && match.length <= 34 ? '[REDACTED_IBAN]' : match;
+    });
     return str;
   }
 

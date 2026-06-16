@@ -102,8 +102,10 @@ class SecurityOrchestrator {
           severity: vuln.severity,
           explanation: vuln.explanation,
           affectedLines: vuln.affected_lines,
-          cwe: this.getCWE(vuln.risk_type),
-          extractedValue: vuln.extracted_value
+          cwe: this.getCWE(vuln.risk_type)
+          // extractedValue intentionally excluded from client-facing results
+          // to prevent credential/secret leakage in API responses.
+          // The value is retained in allVulns only for internal secret migration.
         });
       }
 
