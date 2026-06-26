@@ -68,6 +68,7 @@ See `RUN-THIS.md` for setup instructions.
 ```bash
 cd web
 npm install
+echo "NEXT_PUBLIC_API_URL=http://your-ec2-ip-or-domain" > .env.local
 npm run dev
 ```
 
